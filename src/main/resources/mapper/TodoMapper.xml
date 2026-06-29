@@ -261,14 +261,14 @@
 
     <insert id="insert" parameterType="com.example.todo.model.Todo" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO todos (title, author, user_id, priority, category_id, deadline, display_order, status, completed)
-        VALUES (#{title}, #{author}, #{userId}, #{priority}, #{categoryId}, #{deadline}, #{displayOrder}, #{status}, #{completed})
+        VALUES (#{title}, #{author}, #{userId}, #{priority}, #{categoryId}, #{deadline}, COALESCE(#{displayOrder}, 0), COALESCE(#{status}, 'TODO'), #{completed})
     </insert>
 
     <insert id="bulkInsert">
         INSERT INTO todos (title, author, user_id, priority, category_id, deadline, display_order, status, completed)
         VALUES
         <foreach collection="todos" item="todo" separator=",">
-            (#{todo.title}, #{todo.author}, #{todo.userId}, #{todo.priority}, #{todo.categoryId}, #{todo.deadline}, #{todo.displayOrder}, #{todo.status}, #{todo.completed})
+            (#{todo.title}, #{todo.author}, #{todo.userId}, #{todo.priority}, #{todo.categoryId}, #{todo.deadline}, COALESCE(#{todo.displayOrder}, 0), COALESCE(#{todo.status}, 'TODO'), #{todo.completed})
         </foreach>
     </insert>
 
