@@ -11,6 +11,6 @@ FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 10000
+EXPOSE 8080
 
-ENTRYPOINT ["java", "-Dserver.port=10000", "-jar", "/app/app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT:-8080} -jar /app/app.jar"]
