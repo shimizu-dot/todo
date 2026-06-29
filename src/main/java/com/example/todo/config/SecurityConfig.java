@@ -37,6 +37,7 @@ public class SecurityConfig {
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .csrf(csrf -> csrf.ignoringRequestMatchers(
+                        "/login",
                         "/h2-console/**",
                         "/api/**"
                 ));

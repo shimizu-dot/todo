@@ -1,5 +1,6 @@
 /Users/academia/src/todo/src/test/java/com/example/todo/TodoApplicationTests.java
 /Users/academia/src/todo/src/test/java/com/example/todo/api/TodoApiControllerIntegrationTest.java
 /Users/academia/src/todo/src/test/java/com/example/todo/controller/AdminUserControllerIntegrationTest.java
+/Users/academia/src/todo/src/test/java/com/example/todo/controller/AuthControllerIntegrationTest.java
 /Users/academia/src/todo/src/test/java/com/example/todo/mapper/TodoMapperTest.java
 /Users/academia/src/todo/src/test/java/com/example/todo/service/TodoServiceTest.java
