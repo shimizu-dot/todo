@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme", s || (d ? "dark" : "light"));}catch(e){}})();</script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <title th:text="#{todo.form.title}">ToDo新規登録</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+            crossorigin="anonymous"
+    >
+</head>
+<body class="bg-light">
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-end mb-2">
+                        <a th:href="@{/todo/new(lang='ja')}" class="small me-2">日本語</a>
+                        <a th:href="@{/todo/new(lang='en')}" class="small">English</a>
+                    </div>
+                    <h1 class="h4 mb-4" th:text="#{todo.form.heading}">ToDo新規登録</h1>
+
+                    <form th:action="@{/todo/confirm}" th:object="${todoForm}" method="post">
+                        <div class="mb-3">
+                            <label for="author" class="form-label" th:text="#{todo.form.author}">作成者</label>
+                            <input id="author"
+                                   th:field="*{author}"
+                                   type="text"
+                                   class="form-control"
+                                   th:placeholder="#{todo.form.author.placeholder}">
+                            <div class="text-danger small mt-1"
+                                 th:if="${#fields.hasErrors('author')}"
+                                 th:errors="*{author}">作成者エラー</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label" th:text="#{todo.form.todoTitle}">タイトル</label>
+                            <input id="title"
+                                   th:field="*{title}"
+                                   type="text"
+                                   class="form-control"
+                                   th:placeholder="#{todo.form.title.placeholder}">
+                            <div class="text-danger small mt-1"
+                                 th:if="${#fields.hasErrors('title')}"
+                                 th:errors="*{title}">タイトルエラー</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="detail" class="form-label" th:text="#{todo.form.detail}">詳細</label>
+                            <textarea id="detail"
+                                      th:field="*{detail}"
+                                      class="form-control"
+                                      rows="4"
+                                      th:placeholder="#{todo.form.detail.placeholder}"></textarea>
+                            <div class="text-danger small mt-1"
+                                 th:if="${#fields.hasErrors('detail')}"
+                                 th:errors="*{detail}">詳細エラー</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="priority" class="form-label" th:text="#{todo.form.priority}">優先度</label>
+                            <select id="priority" name="priority" class="form-select">
+                                <option th:each="priorityOption : ${priorities}"
+                                        th:value="${priorityOption}"
+                                        th:text="${priorityOption.label}"
+                                        th:selected="${todoForm.priority == priorityOption}">中</option>
+                            </select>
+                            <div class="text-danger small mt-1"
+                                 th:if="${#fields.hasErrors('priority')}"
+                                 th:errors="*{priority}">優先度エラー</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="categoryId" class="form-label" th:text="#{todo.form.category}">カテゴリ</label>
+                            <select id="categoryId" name="categoryId" class="form-select">
+                                <option th:each="category : ${categories}"
+                                        th:value="${category.id}"
+                                        th:text="${category.name}"
+                                        th:selected="${todoForm.categoryId == category.id}">仕事</option>
+                            </select>
+                            <div class="text-danger small mt-1"
+                                 th:if="${#fields.hasErrors('categoryId')}"
+                                 th:errors="*{categoryId}">カテゴリエラー</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="deadline" class="form-label" th:text="#{todo.form.deadline}">期限日</label>
+                            <input id="deadline"
+                                   th:field="*{deadline}"
+                                   type="date"
+                                   class="form-control">
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" th:text="#{todo.form.confirm}">確認画面へ</button>
+                            <a href="/todo" class="btn btn-outline-secondary" th:text="#{common.back}">戻る</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

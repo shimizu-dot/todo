@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.mapper.WeeklyReportMapper">
+
+    <update id="upsert" parameterType="com.example.todo.model.WeeklyReport">
+        MERGE INTO weekly_reports
+            (week_start, week_end, created_count, completed_count, completion_rate, category_breakdown, generated_at)
+            KEY (week_start, week_end)
+        VALUES
+            (#{weekStart}, #{weekEnd}, #{createdCount}, #{completedCount}, #{completionRate}, #{categoryBreakdown}, #{generatedAt})
+    </update>
+
+    <select id="findAll" resultType="com.example.todo.model.WeeklyReport">
+        SELECT id,
+               week_start,
+               week_end,
+               created_count,
+               completed_count,
+               completion_rate,
+               category_breakdown,
+               generated_at
+        FROM weekly_reports
+        ORDER BY week_start DESC, id DESC
+    </select>
+
+    <select id="findById" resultType="com.example.todo.model.WeeklyReport">
+        SELECT id,
+               week_start,
+               week_end,
+               created_count,
+               completed_count,
+               completion_rate,
+               category_breakdown,
+               generated_at
+        FROM weekly_reports
+        WHERE id = #{id}
+    </select>
+
+</mapper>

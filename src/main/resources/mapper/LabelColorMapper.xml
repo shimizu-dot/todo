@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.mapper.LabelColorMapper">
+
+    <select id="findByUserId" resultType="com.example.todo.model.LabelColor">
+        SELECT id, user_id, label_key, color
+        FROM label_colors
+        WHERE user_id = #{userId}
+    </select>
+
+    <update id="upsert" parameterType="com.example.todo.model.LabelColor">
+        MERGE INTO label_colors (user_id, label_key, color)
+            KEY (user_id, label_key)
+        VALUES (#{userId}, #{labelKey}, #{color})
+    </update>
+
+    <delete id="deleteByUserIdAndKey">
+        DELETE
+        FROM label_colors
+        WHERE user_id = #{userId}
+          AND label_key = #{labelKey}
+    </delete>
+
+    <delete id="deleteByUserId">
+        DELETE
+        FROM label_colors
+        WHERE user_id = #{userId}
+    </delete>
+</mapper>

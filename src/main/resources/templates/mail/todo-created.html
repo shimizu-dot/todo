@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<body>
+<h2>ToDo作成通知</h2>
+<p>新しいToDoが作成されました。</p>
+<ul>
+    <li><strong>ID:</strong> <span th:text="${todoId}">1</span></li>
+    <li><strong>タイトル:</strong> <span th:text="${title}">サンプルタイトル</span></li>
+    <li><strong>作成者:</strong> <span th:text="${author}">user@example.com</span></li>
+    <li><strong>期限日:</strong> <span th:text="${deadline}">2026-04-28</span></li>
+</ul>
+</body>
+</html>

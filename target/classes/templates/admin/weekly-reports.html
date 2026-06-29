@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme", s || (d ? "dark" : "light"));}catch(e){}})();</script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <title th:text="#{admin.weeklyReports.pageTitle}">週次レポート一覧</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+            crossorigin="anonymous"
+    >
+</head>
+<body class="bg-light">
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0" th:text="#{admin.weeklyReports.heading}">週次レポート一覧</h1>
+        <div class="d-flex gap-2">
+            <a th:href="@{/admin/users}" class="btn btn-outline-secondary" th:text="#{admin.users.title}">ユーザー管理</a>
+            <a th:href="@{/admin/audit-logs}" class="btn btn-outline-secondary" th:text="#{admin.audit.title}">監査ログ</a>
+            <a th:href="@{/todo}" class="btn btn-outline-secondary" th:text="#{common.backToTodoList}">ToDo一覧へ戻る</a>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-semibold" th:text="#{admin.weeklyReports.generate.manual}">手動生成</div>
+                <div class="text-muted small" th:text="#{admin.weeklyReports.generate.manual.help}">前週（月曜〜日曜）のレポートを生成します</div>
+            </div>
+            <form th:action="@{/admin/weekly-reports/generate}" method="post">
+                <button class="btn btn-primary" type="submit" th:text="#{admin.weeklyReports.generate.button}">前週レポート生成</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                    <tr>
+                        <th th:text="#{common.id}">ID</th>
+                        <th th:text="#{admin.weeklyReports.table.week}">対象週</th>
+                        <th th:text="#{admin.weeklyReports.table.createdCount}">作成数</th>
+                        <th th:text="#{admin.weeklyReports.table.completedCount}">完了数</th>
+                        <th th:text="#{admin.weeklyReports.table.completionRate}">完了率</th>
+                        <th th:text="#{admin.weeklyReports.table.generatedAt}">生成日時</th>
+                        <th th:text="#{common.detail}">詳細</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(reports)}">
+                        <td colspan="7" class="text-center text-muted" th:text="#{admin.weeklyReports.empty}">週次レポートはまだありません</td>
+                    </tr>
+                    <tr th:each="report : ${reports}">
+                        <td th:text="${report.id}">1</td>
+                        <td th:text="${#temporals.format(report.weekStart, 'yyyy-MM-dd') + ' ~ ' + #temporals.format(report.weekEnd, 'yyyy-MM-dd')}">2026-04-20 ~ 2026-04-26</td>
+                        <td th:text="${report.createdCount}">0</td>
+                        <td th:text="${report.completedCount}">0</td>
+                        <td th:text="${report.completionRate + '%'}">0%</td>
+                        <td th:text="${#temporals.format(report.generatedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-04-28 09:00:00</td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary"
+                               th:href="@{/admin/weekly-reports/{id}(id=${report.id})}" th:text="#{common.view}">表示</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

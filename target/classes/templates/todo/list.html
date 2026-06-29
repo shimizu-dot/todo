@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <script>(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme", s || (d ? "dark" : "light"));}catch(e){}})();</script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <title th:text="#{todo.list.title}">ToDo一覧</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+            crossorigin="anonymous"
+    >
+    <style>
+        .todo-action-btn {
+            min-width: 84px;
+            padding: 0.2rem 0.45rem;
+            font-size: 0.78rem;
+            line-height: 1.2;
+        }
+
+        .progress-area-hidden {
+            display: none;
+        }
+
+        .progress-rate-text {
+            min-width: 52px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-track {
+            background-color: #e9ecef;
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 0.9rem;
+        }
+
+        .progress-fill {
+            width: 0;
+            height: 100%;
+            transition: width 0.8s ease, background-color 0.4s ease;
+        }
+
+        .progress-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .progress-subtext {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+
+        .chart-card {
+            min-height: 320px;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 260px;
+        }
+
+        .donut-center-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .donut-center-label .value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .donut-center-label .caption {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+
+        .view-switch .btn.active {
+            pointer-events: none;
+        }
+
+        .todo-view {
+            display: none;
+        }
+
+        .todo-view.active {
+            display: block;
+        }
+
+        .todo-list-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .todo-list-card, .todo-grid-card {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            background: var(--surface);
+            padding: 0.9rem;
+        }
+
+        .todo-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .todo-grid-wrap {
+            display: grid;
+            gap: 0.9rem;
+            grid-template-columns: 1fr;
+        }
+
+        .todo-list-card.drag-over {
+            outline: 2px dashed var(--accent);
+            outline-offset: -4px;
+        }
+
+        .attachment-icon {
+            font-size: 18px;
+            vertical-align: middle;
+            color: currentColor;
+        }
+
+        .attachment-icon.attached {
+            color: #198754;
+        }
+
+        @media (min-width: 768px) {
+            .todo-grid-wrap {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .todo-grid-wrap {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+<style th:inline="css">
+    :root {
+        --label-priority-high: [(${labelColors.priorityHigh})];
+        --label-priority-medium: [(${labelColors.priorityMedium})];
+        --label-priority-low: [(${labelColors.priorityLow})];
+        --label-status-completed: [(${labelColors.statusCompleted})];
+        --label-status-open: [(${labelColors.statusOpen})];
+    }
+</style>
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0" th:text="#{todo.list.heading}">ToDo一覧</h1>
+            <div class="text-muted small" sec:authorize="isAuthenticated()">
+                <span th:text="#{todo.list.loggedInAs}">ログイン中:</span> <span sec:authentication="name">user</span>
+                <span class="ms-2 badge text-bg-danger" sec:authorize="hasRole('ADMIN')">ADMIN</span>
+                <span class="ms-2 badge text-bg-secondary" sec:authorize="hasRole('USER')">USER</span>
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a th:href="@{/todo(lang='ja')}" class="btn btn-outline-secondary btn-sm" th:text="#{lang.ja}">日本語</a>
+            <a th:href="@{/todo(lang='en')}" class="btn btn-outline-secondary btn-sm" th:text="#{lang.en}">English</a>
+            <a th:href="@{/admin/users}" class="btn btn-outline-dark" sec:authorize="hasRole('ADMIN')" th:text="#{admin.users.title}">ユーザー管理</a>
+            <a th:href="@{/admin/audit-logs}" class="btn btn-outline-dark" sec:authorize="hasRole('ADMIN')" th:text="#{admin.audit.title}">監査ログ</a>
+            <a th:href="@{/admin/weekly-reports}" class="btn btn-outline-dark" sec:authorize="hasRole('ADMIN')" th:text="#{admin.weeklyReports.title}">週次レポート</a>
+            <span class="badge text-bg-light border" sec:authorize="hasRole('USER')" th:text="#{todo.list.userOnly}">マイToDoのみ表示</span>
+            <div class="btn-group">
+                <button type="button"
+                        class="btn btn-outline-success dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false" th:text="#{common.download}">ダウンロード</button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" th:href="@{/todo/csv}" th:text="#{todo.list.csv}">CSVダウンロード</a></li>
+                    <li><a class="dropdown-item" th:href="@{/export/excel}" th:text="#{todo.export.excel}">Excel (.xlsx)</a></li>
+                    <li><a class="dropdown-item" th:href="@{/export/pdf}" th:text="#{todo.export.pdf}">PDF (.pdf)</a></li>
+                </ul>
+            </div>
+            <a th:href="@{/todo/calendar}" class="btn btn-outline-primary" th:text="#{todo.list.calendar}">カレンダー</a>
+            <a th:href="@{/todo/kanban}" class="btn btn-outline-primary" th:text="#{todo.list.kanban}">カンバン</a>
+            <a th:href="@{/todo/new}" class="btn btn-primary" th:text="#{todo.list.new}">新規作成</a>
+            <form th:action="@{/logout}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-outline-secondary" th:text="#{login.logout.button}">ログアウト</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form th:action="@{/todo}" method="get" class="row g-2 align-items-center">
+                <div class="col-12 col-md-5 col-lg-6">
+                    <input type="text"
+                           name="keyword"
+                           class="form-control"
+                           th:value="${keyword}"
+                           th:placeholder="#{todo.list.search.placeholder}">
+                </div>
+                <div class="col-12 col-md-4 col-lg-3">
+                    <select name="categoryId" class="form-select">
+                        <option value="" th:text="#{todo.list.category.all}">全カテゴリ</option>
+                        <option th:each="category : ${categories}"
+                                th:value="${category.id}"
+                                th:text="${category.name}"
+                                th:selected="${categoryId == category.id}">仕事</option>
+                    </select>
+                    <input type="hidden" name="sortBy" th:value="${sortBy}">
+                    <input type="hidden" name="sortDir" th:value="${sortDir}">
+                </div>
+                <div class="col-12 col-md-3 col-lg-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary flex-fill" th:text="#{common.search}">検索</button>
+                    <a th:href="@{/todo}" class="btn btn-outline-secondary flex-fill" th:text="#{common.clear}">クリア</a>
+                </div>
+            </form>
+            <div class="mt-2 text-muted small">
+                <span th:text="#{todo.list.summary(${totalCount}, ${startRecord}, ${endRecord})}">全0件中 0-0件</span>
+                <span th:if="${keyword != null and !#strings.isEmpty(keyword)}"
+                      th:text="#{todo.list.keywordResult(${keyword})}">（検索結果）</span>
+                <span th:if="${categoryId != null}">
+                    <span th:each="category : ${categories}" th:if="${category.id == categoryId}"
+                          th:text="#{todo.list.categoryResult(${category.name})}">（カテゴリ）</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3" th:unless="${#lists.isEmpty(todos)}">
+            <div class="card-body d-flex justify-content-between align-items-center"
+                 th:attr="data-msg-na=#{common.na},data-msg-bulk-confirm=#{todo.list.bulkDelete.confirm}">
+                <h2 class="h6 mb-0" th:text="#{todo.list.viewMode}">表示モード</h2>
+                <div class="btn-group view-switch" role="group" aria-label="View mode">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-view-mode="list" th:text="#{todo.list.viewMode.list}">リスト</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-view-mode="grid" th:text="#{todo.list.viewMode.grid}">グリッド</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-view-mode="table" th:text="#{todo.list.viewMode.table}">テーブル</button>
+                </div>
+            </div>
+        </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="h6 mb-0" th:text="#{todo.label.customize}">ラベル色カスタマイズ</h2>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="resetAllLabelColors" th:text="#{todo.label.resetAll}">全てデフォルトに戻す</button>
+            </div>
+            <div class="row g-2">
+                <div class="col-6 col-md-4 col-lg-2">
+                        <label class="form-label small" th:text="#{todo.label.priorityHigh}">優先度 HIGH</label>
+                    <div class="d-flex gap-1">
+                        <input type="color" class="form-control form-control-color label-color-picker" data-label-key="priorityHigh" th:value="${labelColors.priorityHigh}">
+                        <button type="button" class="btn btn-sm btn-outline-secondary reset-label-color" data-label-key="priorityHigh">↺</button>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                        <label class="form-label small" th:text="#{todo.label.priorityMedium}">優先度 MEDIUM</label>
+                    <div class="d-flex gap-1">
+                        <input type="color" class="form-control form-control-color label-color-picker" data-label-key="priorityMedium" th:value="${labelColors.priorityMedium}">
+                        <button type="button" class="btn btn-sm btn-outline-secondary reset-label-color" data-label-key="priorityMedium">↺</button>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                        <label class="form-label small" th:text="#{todo.label.priorityLow}">優先度 LOW</label>
+                    <div class="d-flex gap-1">
+                        <input type="color" class="form-control form-control-color label-color-picker" data-label-key="priorityLow" th:value="${labelColors.priorityLow}">
+                        <button type="button" class="btn btn-sm btn-outline-secondary reset-label-color" data-label-key="priorityLow">↺</button>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                        <label class="form-label small" th:text="#{todo.label.statusCompleted}">完了ステータス</label>
+                    <div class="d-flex gap-1">
+                        <input type="color" class="form-control form-control-color label-color-picker" data-label-key="statusCompleted" th:value="${labelColors.statusCompleted}">
+                        <button type="button" class="btn btn-sm btn-outline-secondary reset-label-color" data-label-key="statusCompleted">↺</button>
+                    </div>
+                </div>
+                <div class="col-6 col-md-4 col-lg-2">
+                        <label class="form-label small" th:text="#{todo.label.statusOpen}">未完了ステータス</label>
+                    <div class="d-flex gap-1">
+                        <input type="color" class="form-control form-control-color label-color-picker" data-label-key="statusOpen" th:value="${labelColors.statusOpen}">
+                        <button type="button" class="btn btn-sm btn-outline-secondary reset-label-color" data-label-key="statusOpen">↺</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h2 class="h6 mb-0" th:text="#{todo.list.progress}">進捗表示</h2>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" id="progressToggle" checked>
+                    <label class="form-check-label" for="progressToggle" th:text="#{todo.list.progress.toggle}">進捗バーを表示</label>
+                </div>
+            </div>
+
+            <div id="progressArea">
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="progress-label" th:text="#{todo.list.progress.overall}">全体進捗</div>
+                        <div class="progress-rate-text fw-semibold" id="overallProgressRate">0%</div>
+                    </div>
+                    <div class="progress-track">
+                        <div id="overallProgressBar" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-subtext mt-1" id="overallProgressText">0 / 0</div>
+                </div>
+
+                <div>
+                    <div class="progress-label mb-2" th:text="#{todo.list.progress.category}">カテゴリ別進捗</div>
+                    <div id="categoryProgressList" class="d-flex flex-column gap-3"></div>
+                    <div id="categoryProgressEmpty" class="text-muted small d-none" th:text="#{todo.list.progress.empty}">対象タスクがありません</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="fw-semibold" th:text="#{todo.chart.toggleTitle}">分布チャート表示</div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="chartToggle" checked>
+                            <label class="form-check-label" for="chartToggle" th:text="#{todo.chart.toggleLabel}">カテゴリ分布・優先度分布を表示</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm chart-card">
+                <div class="card-body">
+                    <h2 class="h6 mb-3" th:text="#{todo.chart.category}">カテゴリ分布</h2>
+                    <div class="chart-wrap">
+                        <canvas id="categoryDonutChart"></canvas>
+                        <div class="donut-center-label">
+                            <div class="value" id="categoryTotalCount">0</div>
+                            <div class="caption" th:text="#{todo.chart.total}">TOTAL</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm chart-card">
+                <div class="card-body">
+                    <h2 class="h6 mb-3" th:text="#{todo.chart.priority}">優先度分布</h2>
+                    <div class="chart-wrap">
+                        <canvas id="priorityPieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show flash-alert" role="alert">
+        <span th:text="${successMessage}">ToDoを削除しました</span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="this.closest('.alert').remove();"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show flash-alert" role="alert">
+        <span th:text="${errorMessage}">削除に失敗しました</span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="this.closest('.alert').remove();"></button>
+    </div>
+    <div th:if="${importErrors != null and !#lists.isEmpty(importErrors)}" class="alert alert-warning" role="alert">
+        <div class="fw-semibold mb-1" th:text="#{todo.import.error.title}">CSVインポートエラー</div>
+        <ul class="mb-0 ps-3">
+            <li th:each="err : ${importErrors}" th:text="#{todo.import.error.row(${err.lineNumber}, ${err.message})}">行2: titleは必須です</li>
+        </ul>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <h2 class="h6 mb-0" th:text="#{todo.import.title}">CSV一括インポート</h2>
+                <a th:href="@{/todo/import/template}" class="btn btn-outline-secondary btn-sm" th:text="#{todo.import.template.download}">テンプレートCSVダウンロード</a>
+            </div>
+            <form th:action="@{/todo/import}" method="post" enctype="multipart/form-data" class="row g-2 align-items-center">
+                <div class="col-12 col-md-9">
+                    <input type="file" name="csvFile" accept=".csv,text/csv" class="form-control" required>
+                </div>
+                <div class="col-12 col-md-3">
+                    <button type="submit" class="btn btn-primary w-100" th:text="#{todo.import.submit}">CSVインポート</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="todo-view-list" class="todo-view" th:unless="${#lists.isEmpty(todos)}">
+        <div class="todo-list-cards">
+            <article class="todo-list-card" th:each="todo : ${todos}" th:attr="data-id=${todo.id}" draggable="true">
+                <div class="todo-card-meta">
+                    <span class="badge text-bg-light border" th:text="${#temporals.format(todo.createdAt, 'yyyy-MM-dd HH:mm')}">2026-04-22 10:00</span>
+                    <span class="badge"
+                          th:if="${todo.categoryName != null}"
+                          th:style="'background-color: ' + ${todo.categoryColor} + '; color: #ffffff;'"
+                          th:text="${todo.categoryName}">仕事</span>
+                    <span class="badge"
+                          th:classappend="${todo.priority.name() == 'HIGH'} ? ' label-priority-high' : (${todo.priority.name() == 'MEDIUM'} ? ' label-priority-medium' : ' label-priority-low')"
+                          th:text="${todo.priority.label}">中</span>
+                    <span class="badge"
+                          th:classappend="${todo.completed} ? ' label-status-completed' : ' label-status-open'"
+                          th:text="${todo.completed} ? '完了' : '未完了'">未完了</span>
+                    <span class="badge text-bg-light border" th:text="${todo.deadline != null ? #temporals.format(todo.deadline, 'yyyy-MM-dd') : '-'}">2026-04-30</span>
+                </div>
+                <h3 class="h6 mb-2" th:text="${todo.title}"
+                    th:classappend="${todo.completed} ? ' text-decoration-line-through text-muted' : ''">サンプル</h3>
+                <div class="d-inline-flex flex-wrap gap-2">
+                    <form th:action="@{/todo/{id}/toggle(id=${todo.id})}" method="post" class="d-inline">
+                        <button type="submit"
+                                class="btn btn-outline-success btn-sm todo-action-btn"
+                                th:text="${todo.completed} ? #{todo.action.markOpen} : #{todo.action.markDone}">完了にする</button>
+                    </form>
+                    <a th:href="@{/todo/{id}/edit(id=${todo.id})}" class="btn btn-outline-primary btn-sm todo-action-btn" th:text="#{common.edit}">編集</a>
+                    <a th:href="@{'/todo/' + ${todo.id} + '/edit#attachments-section'}"
+                       class="btn btn-outline-info btn-sm todo-action-btn"
+                       th:attr="aria-label=#{todo.attachment.heading},title=#{todo.attachment.heading}">
+                        <span class="material-icons attachment-icon"
+                              th:classappend="${todo.hasAttachment} ? ' attached' : ''">image</span>
+                    </a>
+                    <form th:action="@{/todo/{id}/delete(id=${todo.id})}"
+                          method="post"
+                          class="d-inline"
+                          th:id="'delete-form-list-' + ${todo.id}">
+                        <button type="button"
+                                class="btn btn-danger btn-sm todo-action-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteConfirmModal"
+                                th:attr="data-form-id='delete-form-list-' + ${todo.id},data-todo-title=${todo.title}">
+                            <span th:text="#{common.delete}">削除</span>
+                        </button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div id="todo-view-grid" class="todo-view" th:unless="${#lists.isEmpty(todos)}">
+        <div class="todo-grid-wrap">
+            <article class="todo-grid-card" th:each="todo : ${todos}">
+                <div class="todo-card-meta">
+                    <span class="badge"
+                          th:if="${todo.categoryName != null}"
+                          th:style="'background-color: ' + ${todo.categoryColor} + '; color: #ffffff;'"
+                          th:text="${todo.categoryName}">仕事</span>
+                    <span class="badge"
+                          th:classappend="${todo.priority.name() == 'HIGH'} ? ' label-priority-high' : (${todo.priority.name() == 'MEDIUM'} ? ' label-priority-medium' : ' label-priority-low')"
+                          th:text="${todo.priority.label}">中</span>
+                    <span class="badge"
+                          th:classappend="${todo.completed} ? ' label-status-completed' : ' label-status-open'"
+                          th:text="${todo.completed} ? '完了' : '未完了'">未完了</span>
+                </div>
+                <h3 class="h6 mb-2" th:text="${todo.title}"
+                    th:classappend="${todo.completed} ? ' text-decoration-line-through text-muted' : ''">サンプル</h3>
+                <div class="small text-muted mb-3">
+                    <div th:text="#{todo.label.createdAt(${#temporals.format(todo.createdAt, 'yyyy-MM-dd HH:mm')})}">作成: 2026-04-22 10:00</div>
+                    <div th:text="${todo.deadline != null ? #messages.msg('todo.label.deadline', #temporals.format(todo.deadline, 'yyyy-MM-dd')) : #messages.msg('todo.label.deadline', '-')}">期限: 2026-04-30</div>
+                </div>
+                <div class="d-inline-flex flex-wrap gap-2">
+                    <form th:action="@{/todo/{id}/toggle(id=${todo.id})}" method="post" class="d-inline">
+                        <button type="submit"
+                                class="btn btn-outline-success btn-sm todo-action-btn"
+                                th:text="${todo.completed} ? #{todo.action.markOpen} : #{todo.action.markDone}">完了にする</button>
+                    </form>
+                    <a th:href="@{/todo/{id}/edit(id=${todo.id})}" class="btn btn-outline-primary btn-sm todo-action-btn" th:text="#{common.edit}">編集</a>
+                    <a th:href="@{'/todo/' + ${todo.id} + '/edit#attachments-section'}"
+                       class="btn btn-outline-info btn-sm todo-action-btn"
+                       th:attr="aria-label=#{todo.attachment.heading},title=#{todo.attachment.heading}">
+                        <span class="material-icons attachment-icon"
+                              th:classappend="${todo.hasAttachment} ? ' attached' : ''">image</span>
+                    </a>
+                    <form th:action="@{/todo/{id}/delete(id=${todo.id})}"
+                          method="post"
+                          class="d-inline"
+                          th:id="'delete-form-grid-' + ${todo.id}">
+                        <button type="button"
+                                class="btn btn-danger btn-sm todo-action-btn"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteConfirmModal"
+                                th:attr="data-form-id='delete-form-grid-' + ${todo.id},data-todo-title=${todo.title}">
+                            <span th:text="#{common.delete}">削除</span>
+                        </button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <div id="todo-view-table" class="card shadow-sm todo-view" th:unless="${#lists.isEmpty(todos)}">
+        <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="selectAllTodos">
+                        <label class="form-check-label" for="selectAllTodos" th:text="#{todo.list.selectAll}">全選択</label>
+                    </div>
+                    <div class="small text-muted">
+                        <span th:text="#{todo.list.selectedCount.label}">選択数</span>:
+                        <span id="selectedTodoCount">0</span>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <form id="bulkStatusFormDone" th:action="@{/todo/bulk-status}" method="post" class="d-inline">
+                        <input type="hidden" name="action" value="done">
+                        <div id="bulkStatusDoneHiddenFields"></div>
+                        <button type="button" id="bulkMarkDoneButton" class="btn btn-success btn-sm" disabled th:text="#{todo.list.bulkMarkDone}">完了にする</button>
+                    </form>
+                    <form id="bulkStatusFormOpen" th:action="@{/todo/bulk-status}" method="post" class="d-inline">
+                        <input type="hidden" name="action" value="open">
+                        <div id="bulkStatusOpenHiddenFields"></div>
+                        <button type="button" id="bulkMarkOpenButton" class="btn btn-outline-primary btn-sm" disabled th:text="#{todo.list.bulkMarkOpen}">未完了に戻す</button>
+                    </form>
+                    <form id="bulkDeleteForm" th:action="@{/todo/bulk-delete}" method="post" class="d-inline">
+                        <div id="bulkDeleteHiddenFields"></div>
+                        <button type="button" id="bulkDeleteButton" class="btn btn-danger btn-sm" disabled>
+                            <span th:text="#{todo.list.bulkDelete}">選択した項目を削除</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                    <tr>
+                        <th scope="col" class="text-center" style="width: 52px;">
+                            <span class="visually-hidden" th:text="#{todo.table.select}">選択</span>
+                        </th>
+                        <th scope="col">
+                            <a class="text-white text-decoration-none"
+                               th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy='createdAt', sortDir=${sortBy == 'createdAt' and sortDir == 'asc' ? 'desc' : 'asc'}, page=0)}">
+                                <span th:text="#{todo.table.createdAt}">作成日</span>
+                                <span th:if="${sortBy == 'createdAt'}"
+                                      th:text="${sortDir == 'asc' ? '▲' : '▼'}">▼</span>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a class="text-white text-decoration-none"
+                               th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy='title', sortDir=${sortBy == 'title' and sortDir == 'asc' ? 'desc' : 'asc'}, page=0)}">
+                                <span th:text="#{todo.table.title}">タイトル</span>
+                                <span th:if="${sortBy == 'title'}"
+                                      th:text="${sortDir == 'asc' ? '▲' : '▼'}">▼</span>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a class="text-white text-decoration-none"
+                               th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy='category', sortDir=${sortBy == 'category' and sortDir == 'asc' ? 'desc' : 'asc'}, page=0)}">
+                                <span th:text="#{todo.table.category}">カテゴリ</span>
+                                <span th:if="${sortBy == 'category'}"
+                                      th:text="${sortDir == 'asc' ? '▲' : '▼'}">▼</span>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a class="text-white text-decoration-none"
+                               th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy='priority', sortDir=${sortBy == 'priority' and sortDir == 'asc' ? 'desc' : 'asc'}, page=0)}">
+                                <span th:text="#{todo.table.priority}">優先度</span>
+                                <span th:if="${sortBy == 'priority'}"
+                                      th:text="${sortDir == 'asc' ? '▲' : '▼'}">▼</span>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a class="text-white text-decoration-none"
+                               th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy='deadline', sortDir=${sortBy == 'deadline' and sortDir == 'asc' ? 'desc' : 'asc'}, page=0)}">
+                                <span th:text="#{todo.table.deadline}">期限日</span>
+                                <span th:if="${sortBy == 'deadline'}"
+                                      th:text="${sortDir == 'asc' ? '▲' : '▼'}">▼</span>
+                            </a>
+                        </th>
+                        <th scope="col">
+                            <a class="text-white text-decoration-none"
+                               th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy='completed', sortDir=${sortBy == 'completed' and sortDir == 'asc' ? 'desc' : 'asc'}, page=0)}">
+                                <span th:text="#{todo.table.status}">ステータス</span>
+                                <span th:if="${sortBy == 'completed'}"
+                                      th:text="${sortDir == 'asc' ? '▲' : '▼'}">▼</span>
+                            </a>
+                        </th>
+                        <th scope="col" class="text-center" th:text="#{todo.table.actions}">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="todo : ${todos}"
+                        th:classappend="${todo.deadline != null and todo.deadline.isBefore(today)} ? 'table-danger' : (${todo.deadline != null and !todo.deadline.isBefore(today) and !todo.deadline.isAfter(nearDeadline)} ? 'table-warning' : (${todo.completed} ? 'table-secondary' : ''))">
+                        <td class="text-center">
+                            <input class="form-check-input todo-select-checkbox"
+                                   type="checkbox"
+                                   th:id="'todo-select-' + ${todo.id}"
+                                   th:value="${todo.id}">
+                        </td>
+                        <td th:text="${#temporals.format(todo.createdAt, 'yyyy-MM-dd HH:mm')}">2026-04-22 10:00</td>
+                        <td>
+                            <span th:text="${todo.title}"
+                                  th:classappend="${todo.completed} ? ' text-decoration-line-through text-muted' : ''">サンプル</span>
+                        </td>
+                        <td>
+                            <span class="badge"
+                                  th:if="${todo.categoryName != null}"
+                                  th:style="'background-color: ' + ${todo.categoryColor} + '; color: #ffffff;'"
+                                  th:text="${todo.categoryName}">仕事</span>
+                        </td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${todo.priority.name() == 'HIGH'} ? ' label-priority-high' : (${todo.priority.name() == 'MEDIUM'} ? ' label-priority-medium' : ' label-priority-low')"
+                                  th:text="${todo.priority.label}">中</span>
+                        </td>
+                        <td th:text="${todo.deadline != null ? #temporals.format(todo.deadline, 'yyyy-MM-dd') : '-'}">2026-04-30</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${todo.completed} ? ' label-status-completed' : ' label-status-open'"
+                                  th:text="${todo.completed} ? '完了' : '未完了'">未完了</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-inline-flex flex-wrap gap-2">
+                                <form th:action="@{/todo/{id}/toggle(id=${todo.id})}" method="post" class="d-inline">
+                                    <button type="submit"
+                                            class="btn btn-outline-success btn-sm todo-action-btn"
+                                            th:text="${todo.completed} ? #{todo.action.markOpen} : #{todo.action.markDone}">完了にする</button>
+                                </form>
+                                <a th:href="@{/todo/{id}/edit(id=${todo.id})}" class="btn btn-outline-primary btn-sm todo-action-btn" th:text="#{common.edit}">編集</a>
+                                <a th:href="@{'/todo/' + ${todo.id} + '/edit#attachments-section'}"
+                                   class="btn btn-outline-info btn-sm todo-action-btn"
+                                   th:attr="aria-label=#{todo.attachment.heading},title=#{todo.attachment.heading}">
+                                    <span class="material-icons attachment-icon"
+                                          th:classappend="${todo.hasAttachment} ? ' attached' : ''">image</span>
+                                </a>
+                                <form th:action="@{/todo/{id}/delete(id=${todo.id})}"
+                                      method="post"
+                                      class="d-inline"
+                                      th:id="'delete-form-' + ${todo.id}">
+                                    <button type="button"
+                                            class="btn btn-danger btn-sm todo-action-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#deleteConfirmModal"
+                                            th:attr="data-form-id='delete-form-' + ${todo.id},data-todo-title=${todo.title}">
+                                        <span th:text="#{common.delete}">削除</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <nav th:if="${todoPage.totalPages > 0}" aria-label="ToDo pagination" class="mt-4">
+        <ul class="pagination justify-content-center mb-0">
+            <li class="page-item" th:classappend="${todoPage.first} ? ' disabled' : ''">
+                <a class="page-link"
+                   th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy=${sortBy}, sortDir=${sortDir}, page=${currentPage - 1})}" th:text="#{common.prev}">前へ</a>
+            </li>
+
+            <li class="page-item"
+                th:each="pageNum : ${#numbers.sequence(0, todoPage.totalPages - 1)}"
+                th:classappend="${pageNum == currentPage} ? ' active' : ''">
+                <a class="page-link"
+                   th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy=${sortBy}, sortDir=${sortDir}, page=${pageNum})}"
+                   th:text="${pageNum + 1}">1</a>
+            </li>
+
+            <li class="page-item" th:classappend="${todoPage.last} ? ' disabled' : ''">
+                <a class="page-link"
+                   th:href="@{/todo(keyword=${keyword}, categoryId=${categoryId}, sortBy=${sortBy}, sortDir=${sortDir}, page=${currentPage + 1})}" th:text="#{common.next}">次へ</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="card border-0 shadow-sm" th:if="${#lists.isEmpty(todos)}">
+        <div class="card-body text-center py-5 px-4">
+            <h2 class="h5 mb-3"
+                th:text="${keyword != null and !#strings.isEmpty(keyword)} ? #{todo.empty.notFound} : #{todo.empty.none}">
+                ToDoがまだ登録されていません
+            </h2>
+            <p class="text-muted mb-2"
+               th:if="${keyword != null and !#strings.isEmpty(keyword)}"
+               th:text="#{todo.empty.notFound.help}">
+                検索キーワードを変更するか、「クリア」で全件表示に戻せます。
+            </p>
+            <p class="text-muted mb-2"
+               th:unless="${keyword != null and !#strings.isEmpty(keyword)}"
+               th:text="#{todo.empty.none.help1}">
+                最初の1件を作成して、タスク管理を始めましょう。
+            </p>
+            <p class="text-muted mb-4"
+               th:unless="${keyword != null and !#strings.isEmpty(keyword)}"
+               th:text="#{todo.empty.none.help2}">
+                「新規作成」ボタンから、すぐにToDoを追加できます。
+            </p>
+            <a th:href="@{/todo/new}" class="btn btn-primary px-4" th:text="#{todo.list.new}">新規作成</a>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="deleteConfirmModalLabel" th:text="#{todo.delete.confirm.title}">削除の確認</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0" th:text="#{todo.delete.confirm.message}">本当に削除しますか？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" th:text="#{common.cancel}">キャンセル</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton" th:text="#{common.delete}">削除する</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let targetDeleteFormId = null;
+        let progressPollingTimer = null;
+        let categoryDonutChart = null;
+        let priorityPieChart = null;
+        const deleteModal = document.getElementById("deleteConfirmModal");
+        const i18nHost = document.querySelector(".card-body[data-msg-na]");
+        const msgNa = i18nHost?.dataset?.msgNa || "N/A";
+        const msgBulkDeleteConfirm = i18nHost?.dataset?.msgBulkConfirm || "Are you sure?";
+        const confirmDeleteButton = document.getElementById("confirmDeleteButton");
+        const selectAllTodos = document.getElementById("selectAllTodos");
+        const selectedTodoCount = document.getElementById("selectedTodoCount");
+        const bulkDeleteButton = document.getElementById("bulkDeleteButton");
+        const bulkDeleteForm = document.getElementById("bulkDeleteForm");
+        const bulkDeleteHiddenFields = document.getElementById("bulkDeleteHiddenFields");
+        const bulkMarkDoneButton = document.getElementById("bulkMarkDoneButton");
+        const bulkMarkOpenButton = document.getElementById("bulkMarkOpenButton");
+        const bulkStatusFormDone = document.getElementById("bulkStatusFormDone");
+        const bulkStatusFormOpen = document.getElementById("bulkStatusFormOpen");
+        const bulkStatusDoneHiddenFields = document.getElementById("bulkStatusDoneHiddenFields");
+        const bulkStatusOpenHiddenFields = document.getElementById("bulkStatusOpenHiddenFields");
+        const todoSelectCheckboxes = document.querySelectorAll(".todo-select-checkbox");
+        const progressToggle = document.getElementById("progressToggle");
+        const progressArea = document.getElementById("progressArea");
+        const overallProgressRate = document.getElementById("overallProgressRate");
+        const overallProgressBar = document.getElementById("overallProgressBar");
+        const overallProgressText = document.getElementById("overallProgressText");
+        const categoryProgressList = document.getElementById("categoryProgressList");
+        const categoryProgressEmpty = document.getElementById("categoryProgressEmpty");
+        const chartToggle = document.getElementById("chartToggle");
+        const categoryDonutChartCanvas = document.getElementById("categoryDonutChart");
+        const priorityPieChartCanvas = document.getElementById("priorityPieChart");
+        const categoryTotalCount = document.getElementById("categoryTotalCount");
+        const chartCards = document.querySelectorAll(".chart-card");
+        const labelColorPickers = document.querySelectorAll(".label-color-picker");
+        const resetLabelButtons = document.querySelectorAll(".reset-label-color");
+        const resetAllLabelColors = document.getElementById("resetAllLabelColors");
+        const viewModeButtons = document.querySelectorAll("[data-view-mode]");
+        const viewModeSections = {
+            list: document.getElementById("todo-view-list"),
+            grid: document.getElementById("todo-view-grid"),
+            table: document.getElementById("todo-view-table")
+        };
+        const defaultLabelColors = {
+            priorityHigh: "#dc3545",
+            priorityMedium: "#ffc107",
+            priorityLow: "#198754",
+            statusCompleted: "#198754",
+            statusOpen: "#6c757d"
+        };
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute("content");
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute("content");
+
+        function escapeHtml(value) {
+            if (value === null || value === undefined) {
+                return "";
+            }
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function applyProgressBar(barElement, rate, color) {
+            if (!barElement) {
+                return;
+            }
+            const safeRate = Math.max(0, Math.min(100, Number(rate) || 0));
+            barElement.style.backgroundColor = color || "#0d6efd";
+            barElement.style.width = safeRate + "%";
+        }
+
+        function renderCategoryProgress(categories) {
+            if (!categoryProgressList || !categoryProgressEmpty) {
+                return;
+            }
+            if (!Array.isArray(categories) || categories.length === 0) {
+                categoryProgressList.innerHTML = "";
+                categoryProgressEmpty.classList.remove("d-none");
+                return;
+            }
+
+            const html = categories.map(function (category) {
+                const name = escapeHtml(category.categoryName || msgNa);
+                const rate = Math.max(0, Math.min(100, Number(category.completionRate) || 0));
+                const completed = Number(category.completedCount) || 0;
+                const total = Number(category.totalCount) || 0;
+                const color = category.barColor || "#0d6efd";
+                return [
+                    "<div>",
+                    "<div class=\"d-flex justify-content-between align-items-center mb-1\">",
+                    "<div class=\"progress-label\">" + name + "</div>",
+                    "<div class=\"progress-rate-text\">" + rate + "%</div>",
+                    "</div>",
+                    "<div class=\"progress-track\"><div class=\"progress-fill\" style=\"width: " + rate + "%; background-color: " + color + ";\"></div></div>",
+                    "<div class=\"progress-subtext mt-1\">" + completed + " / " + total + "</div>",
+                    "</div>"
+                ].join("");
+            }).join("");
+
+            categoryProgressList.innerHTML = html;
+            categoryProgressEmpty.classList.add("d-none");
+        }
+
+        async function fetchProgressData() {
+            if (!progressArea || progressArea.classList.contains("progress-area-hidden")) {
+                return;
+            }
+            try {
+                const response = await fetch("/api/todo/progress", {
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                });
+                if (!response.ok) {
+                    return;
+                }
+                const data = await response.json();
+                const rate = Math.max(0, Math.min(100, Number(data.completionRate) || 0));
+                if (overallProgressRate) {
+                    overallProgressRate.textContent = rate + "%";
+                }
+                if (overallProgressText) {
+                    const completed = Number(data.completedCount) || 0;
+                    const total = Number(data.totalCount) || 0;
+                    overallProgressText.textContent = completed + " / " + total;
+                }
+                applyProgressBar(overallProgressBar, rate, data.barColor);
+                renderCategoryProgress(data.categories);
+            } catch (error) {
+                // 無限リトライはポーリング側で担保する
+            }
+        }
+
+        function startProgressPolling() {
+            if (progressPollingTimer) {
+                clearInterval(progressPollingTimer);
+            }
+            fetchProgressData();
+            progressPollingTimer = window.setInterval(fetchProgressData, 30000);
+        }
+
+        function stopProgressPolling() {
+            if (progressPollingTimer) {
+                clearInterval(progressPollingTimer);
+                progressPollingTimer = null;
+            }
+        }
+
+        function setProgressVisibility(visible) {
+            if (!progressArea || !progressToggle) {
+                return;
+            }
+            progressArea.classList.toggle("progress-area-hidden", !visible);
+            progressToggle.checked = visible;
+            localStorage.setItem("todo.progress.visible", visible ? "1" : "0");
+            if (visible) {
+                startProgressPolling();
+            } else {
+                stopProgressPolling();
+            }
+        }
+
+        function renderCategoryDonutChart(items) {
+            if (!categoryDonutChartCanvas || !Array.isArray(items)) {
+                return;
+            }
+            const labels = items.map(function (item) {
+                    return item.categoryName || msgNa;
+            });
+            const values = items.map(function (item) {
+                return Number(item.taskCount) || 0;
+            });
+            const colors = items.map(function (item) {
+                return item.categoryColor || "#adb5bd";
+            });
+            const total = values.reduce(function (acc, value) {
+                return acc + value;
+            }, 0);
+
+            if (categoryTotalCount) {
+                categoryTotalCount.textContent = String(total);
+            }
+
+            if (categoryDonutChart) {
+                categoryDonutChart.destroy();
+            }
+            categoryDonutChart = new Chart(categoryDonutChartCanvas, {
+                type: "doughnut",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "65%",
+                    plugins: {
+                        legend: {
+                            position: "bottom"
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderPriorityPieChart(items) {
+            if (!priorityPieChartCanvas || !Array.isArray(items)) {
+                return;
+            }
+            const colorMap = {
+                HIGH: "#dc3545",
+                MEDIUM: "#ffc107",
+                LOW: "#198754"
+            };
+            const labelMap = {
+                HIGH: "HIGH",
+                MEDIUM: "MEDIUM",
+                LOW: "LOW"
+            };
+            const labels = items.map(function (item) {
+                return labelMap[item.priority] || item.priority || "UNKNOWN";
+            });
+            const values = items.map(function (item) {
+                return Number(item.taskCount) || 0;
+            });
+            const colors = items.map(function (item) {
+                return colorMap[item.priority] || "#0d6efd";
+            });
+
+            if (priorityPieChart) {
+                priorityPieChart.destroy();
+            }
+            priorityPieChart = new Chart(priorityPieChartCanvas, {
+                type: "pie",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: "#ffffff",
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "bottom"
+                        }
+                    }
+                }
+            });
+        }
+
+        async function fetchChartStats() {
+            if (!categoryDonutChartCanvas || !priorityPieChartCanvas) {
+                return;
+            }
+            try {
+                const responses = await Promise.all([
+                    fetch("/api/todo/stats/category", {headers: {"Accept": "application/json"}}),
+                    fetch("/api/todo/stats/priority", {headers: {"Accept": "application/json"}})
+                ]);
+                if (!responses[0].ok || !responses[1].ok) {
+                    return;
+                }
+                const categoryData = await responses[0].json();
+                const priorityData = await responses[1].json();
+                renderCategoryDonutChart(categoryData);
+                renderPriorityPieChart(priorityData);
+            } catch (error) {
+                // no-op
+            }
+        }
+
+        function setChartVisibility(visible) {
+            chartCards.forEach(function (card) {
+                const col = card.closest(".col-12");
+                if (col) {
+                    col.classList.toggle("d-none", !visible);
+                }
+            });
+            if (chartToggle) {
+                chartToggle.checked = visible;
+            }
+            localStorage.setItem("todo.chart.visible", visible ? "1" : "0");
+            if (visible) {
+                fetchChartStats();
+            }
+        }
+
+        function applyViewMode(mode) {
+            const safeMode = viewModeSections[mode] ? mode : "table";
+            Object.keys(viewModeSections).forEach(function (key) {
+                const section = viewModeSections[key];
+                if (section) {
+                    section.classList.toggle("active", key === safeMode);
+                }
+            });
+            viewModeButtons.forEach(function (button) {
+                const selected = button.getAttribute("data-view-mode") === safeMode;
+                button.classList.toggle("active", selected);
+                button.classList.toggle("btn-secondary", selected);
+                button.classList.toggle("btn-outline-secondary", !selected);
+            });
+            localStorage.setItem("todo.view.mode", safeMode);
+        }
+
+        function cssVarName(labelKey) {
+            if (labelKey === "priorityHigh") return "--label-priority-high";
+            if (labelKey === "priorityMedium") return "--label-priority-medium";
+            if (labelKey === "priorityLow") return "--label-priority-low";
+            if (labelKey === "statusCompleted") return "--label-status-completed";
+            if (labelKey === "statusOpen") return "--label-status-open";
+            return null;
+        }
+
+        function isValidHexColor(color) {
+            return typeof color === "string" && /^#[0-9a-fA-F]{6}$/.test(color);
+        }
+
+        function applyResolvedLabelColors(colors) {
+            Object.keys(defaultLabelColors).forEach(function (labelKey) {
+                const varName = cssVarName(labelKey);
+                const defaultColor = defaultLabelColors[labelKey];
+                const resolvedColor = isValidHexColor(colors?.[labelKey]) ? colors[labelKey] : defaultColor;
+                if (varName && resolvedColor) {
+                    document.documentElement.style.setProperty(varName, resolvedColor);
+                }
+                const picker = document.querySelector(".label-color-picker[data-label-key='" + labelKey + "']");
+                if (picker && resolvedColor) {
+                    picker.value = resolvedColor;
+                }
+            });
+        }
+
+        async function labelColorRequest(url, options) {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error("Label color request failed: " + response.status);
+            }
+            return response;
+        }
+
+        async function saveLabelColor(labelKey, color) {
+            await labelColorRequest("/api/label-colors/" + encodeURIComponent(labelKey), {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({color: color})
+            });
+        }
+
+        async function resetLabelColor(labelKey) {
+            await labelColorRequest("/api/label-colors/" + encodeURIComponent(labelKey), {method: "DELETE"});
+        }
+
+        async function resetAllColors() {
+            await labelColorRequest("/api/label-colors", {method: "DELETE"});
+        }
+
+        async function fetchResolvedLabelColors() {
+            const response = await labelColorRequest("/api/label-colors", {method: "GET"});
+            return await response.json();
+        }
+
+        deleteModal.addEventListener("show.bs.modal", function (event) {
+            const triggerButton = event.relatedTarget;
+            targetDeleteFormId = triggerButton.getAttribute("data-form-id");
+        });
+
+        confirmDeleteButton.addEventListener("click", function () {
+            if (!targetDeleteFormId) {
+                return;
+            }
+            const targetForm = document.getElementById(targetDeleteFormId);
+            if (targetForm) {
+                targetForm.submit();
+            }
+        });
+
+        function getSelectedIds() {
+            return Array.from(todoSelectCheckboxes)
+                .filter(function (checkbox) {
+                    return checkbox.checked;
+                })
+                .map(function (checkbox) {
+                    return checkbox.value;
+                });
+        }
+
+        function rewriteHiddenSelectedIds(container, selectedIds) {
+            if (!container) {
+                return;
+            }
+            container.innerHTML = "";
+            selectedIds.forEach(function (id) {
+                const hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.name = "selectedIds";
+                hidden.value = id;
+                container.appendChild(hidden);
+            });
+        }
+
+        function updateBulkActionState() {
+            const selectedIds = getSelectedIds();
+            const hasChecked = selectedIds.length > 0;
+            if (selectedTodoCount) {
+                selectedTodoCount.textContent = String(selectedIds.length);
+            }
+            if (bulkDeleteButton) {
+                bulkDeleteButton.disabled = !hasChecked;
+            }
+            if (bulkMarkDoneButton) {
+                bulkMarkDoneButton.disabled = !hasChecked;
+            }
+            if (bulkMarkOpenButton) {
+                bulkMarkOpenButton.disabled = !hasChecked;
+            }
+        }
+
+        function updateSelectAllState() {
+            if (!selectAllTodos || todoSelectCheckboxes.length === 0) {
+                return;
+            }
+            const checkedCount = Array.from(todoSelectCheckboxes).filter(function (checkbox) {
+                return checkbox.checked;
+            }).length;
+            selectAllTodos.checked = checkedCount > 0 && checkedCount === todoSelectCheckboxes.length;
+            selectAllTodos.indeterminate = checkedCount > 0 && checkedCount < todoSelectCheckboxes.length;
+        }
+
+        if (selectAllTodos) {
+            selectAllTodos.addEventListener("change", function () {
+                todoSelectCheckboxes.forEach(function (checkbox) {
+                    checkbox.checked = selectAllTodos.checked;
+                });
+                updateBulkActionState();
+                updateSelectAllState();
+            });
+        }
+
+        todoSelectCheckboxes.forEach(function (checkbox) {
+            checkbox.addEventListener("change", function () {
+                updateBulkActionState();
+                updateSelectAllState();
+            });
+        });
+
+        if (bulkDeleteButton && bulkDeleteForm) {
+            bulkDeleteButton.addEventListener("click", function () {
+                const selectedIds = getSelectedIds();
+
+                if (selectedIds.length === 0) {
+                    return;
+                }
+
+                const confirmed = window.confirm(msgBulkDeleteConfirm);
+                if (!confirmed) {
+                    return;
+                }
+
+                rewriteHiddenSelectedIds(bulkDeleteHiddenFields, selectedIds);
+                bulkDeleteForm.submit();
+            });
+        }
+
+        if (bulkMarkDoneButton && bulkStatusFormDone) {
+            bulkMarkDoneButton.addEventListener("click", function () {
+                const selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    return;
+                }
+                rewriteHiddenSelectedIds(bulkStatusDoneHiddenFields, selectedIds);
+                bulkStatusFormDone.submit();
+            });
+        }
+
+        if (bulkMarkOpenButton && bulkStatusFormOpen) {
+            bulkMarkOpenButton.addEventListener("click", function () {
+                const selectedIds = getSelectedIds();
+                if (selectedIds.length === 0) {
+                    return;
+                }
+                rewriteHiddenSelectedIds(bulkStatusOpenHiddenFields, selectedIds);
+                bulkStatusFormOpen.submit();
+            });
+        }
+
+        const alerts = document.querySelectorAll(".flash-alert");
+        alerts.forEach(function (alert) {
+            setTimeout(function () {
+                alert.classList.remove("show");
+                setTimeout(function () {
+                    if (alert.parentNode) {
+                        alert.remove();
+                    }
+                }, 150);
+            }, 3000);
+        });
+
+        updateBulkActionState();
+        updateSelectAllState();
+
+        if (progressToggle && progressArea) {
+            const savedVisibility = localStorage.getItem("todo.progress.visible");
+            const initialVisible = savedVisibility !== "0";
+            setProgressVisibility(initialVisible);
+            progressToggle.addEventListener("change", function () {
+                setProgressVisibility(progressToggle.checked);
+            });
+            window.addEventListener("beforeunload", function () {
+                stopProgressPolling();
+            });
+        }
+
+        labelColorPickers.forEach(function (picker) {
+            picker.addEventListener("change", async function () {
+                const labelKey = picker.getAttribute("data-label-key");
+                const color = picker.value;
+                const varName = cssVarName(labelKey);
+                if (varName) {
+                    document.documentElement.style.setProperty(varName, color);
+                }
+                try {
+                    await saveLabelColor(labelKey, color);
+                } catch (e) {
+                    // no-op
+                }
+            });
+        });
+
+        resetLabelButtons.forEach(function (button) {
+            button.addEventListener("click", async function () {
+                const labelKey = button.getAttribute("data-label-key");
+                try {
+                    await resetLabelColor(labelKey);
+                    const resolved = await fetchResolvedLabelColors();
+                    applyResolvedLabelColors(resolved);
+                } catch (e) {
+                    const varName = cssVarName(labelKey);
+                    const defaultColor = defaultLabelColors[labelKey];
+                    if (varName && defaultColor) {
+                        document.documentElement.style.setProperty(varName, defaultColor);
+                    }
+                    const picker = document.querySelector(".label-color-picker[data-label-key='" + labelKey + "']");
+                    if (picker && defaultColor) {
+                        picker.value = defaultColor;
+                    }
+                }
+            });
+        });
+
+        if (resetAllLabelColors) {
+            resetAllLabelColors.addEventListener("click", async function () {
+                try {
+                    await resetAllColors();
+                    const resolved = await fetchResolvedLabelColors();
+                    applyResolvedLabelColors(resolved);
+                } catch (e) {
+                    applyResolvedLabelColors(defaultLabelColors);
+                }
+            });
+        }
+
+        if (chartToggle && chartCards.length > 0) {
+            const savedChartVisibility = localStorage.getItem("todo.chart.visible");
+            const initialChartVisible = savedChartVisibility !== "0";
+            setChartVisibility(initialChartVisible);
+            chartToggle.addEventListener("change", function () {
+                setChartVisibility(chartToggle.checked);
+            });
+        } else {
+            fetchChartStats();
+        }
+
+        if (viewModeButtons.length > 0) {
+            const savedViewMode = localStorage.getItem("todo.view.mode") || "table";
+            applyViewMode(savedViewMode);
+            viewModeButtons.forEach(function (button) {
+                button.addEventListener("click", function () {
+                    applyViewMode(button.getAttribute("data-view-mode"));
+                });
+            });
+        }
+
+        const listCardsContainer = document.querySelector(".todo-list-cards");
+        if (listCardsContainer) {
+            let draggingCard = null;
+            let previousOrder = [];
+
+            function listCards() {
+                return Array.from(listCardsContainer.querySelectorAll(".todo-list-card"));
+            }
+
+            function collectIds() {
+                return listCards().map(function (card) {
+                    return Number(card.getAttribute("data-id"));
+                }).filter(function (id) {
+                    return Number.isFinite(id);
+                });
+            }
+
+            async function persistOrder(ids) {
+                const headers = {"Content-Type": "application/json"};
+                if (csrfToken && csrfHeader) {
+                    headers[csrfHeader] = csrfToken;
+                }
+                const response = await fetch("/api/todo/reorder", {
+                    method: "PUT",
+                    headers: headers,
+                    body: JSON.stringify({ids: ids})
+                });
+                if (!response.ok) {
+                    throw new Error("reorder failed");
+                }
+            }
+
+            listCards().forEach(function (card) {
+                card.addEventListener("dragstart", function () {
+                    draggingCard = card;
+                    previousOrder = collectIds();
+                });
+                card.addEventListener("dragover", function (e) {
+                    e.preventDefault();
+                    if (draggingCard && draggingCard !== card) {
+                        card.classList.add("drag-over");
+                    }
+                });
+                card.addEventListener("dragleave", function () {
+                    card.classList.remove("drag-over");
+                });
+                card.addEventListener("drop", async function (e) {
+                    e.preventDefault();
+                    card.classList.remove("drag-over");
+                    if (!draggingCard || draggingCard === card) {
+                        return;
+                    }
+                    const cards = listCards();
+                    const draggingIndex = cards.indexOf(draggingCard);
+                    const targetIndex = cards.indexOf(card);
+                    if (draggingIndex < 0 || targetIndex < 0) {
+                        return;
+                    }
+                    if (draggingIndex < targetIndex) {
+                        listCardsContainer.insertBefore(draggingCard, card.nextSibling);
+                    } else {
+                        listCardsContainer.insertBefore(draggingCard, card);
+                    }
+
+                    try {
+                        await persistOrder(collectIds());
+                    } catch (err) {
+                        const byId = new Map(listCards().map(function (c) {
+                            return [Number(c.getAttribute("data-id")), c];
+                        }));
+                        previousOrder.forEach(function (id) {
+                            const cardEl = byId.get(id);
+                            if (cardEl) {
+                                listCardsContainer.appendChild(cardEl);
+                            }
+                        });
+                        alert("[[#{todo.reorder.saveFailed}]]");
+                    }
+                });
+            });
+        }
+    });
+</script>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

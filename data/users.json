@@ -1,0 +1,16 @@
+[ {
+  "username" : "admin",
+  "password" : "$2a$10$P83BJTK6pMYBqNGENgRyI.8m3t.QvUgHBQg5cH4Zfml727UqO0CY6",
+  "role" : "ADMIN",
+  "enabled" : true
+}, {
+  "username" : "user",
+  "password" : "$2a$10$ExHgV.DID8emONDsVN5izuhowzo3DcDn8oimB3Slcd1CSYpOEahuO",
+  "role" : "USER",
+  "enabled" : true
+}, {
+  "username" : "h4mizoo",
+  "password" : "$2a$10$YQhsZbBchRypKsnmG8DAYe.Y2ZBOycXPIOu59uv7MNSl1t789WjV.",
+  "role" : "ADMIN",
+  "enabled" : true
+} ]

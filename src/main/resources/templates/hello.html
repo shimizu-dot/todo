@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme", s || (d ? "dark" : "light"));}catch(e){}})();</script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <title>Hello</title>
+</head>
+<body>
+<h1 th:text="${message}">Hello! Spring Boot</h1>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.mapper.TodoAttachmentMapper">
+
+    <insert id="insert" parameterType="com.example.todo.model.TodoAttachment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO todo_attachments (todo_id, original_file_name, stored_file_name, content_type, file_size)
+        VALUES (#{todoId}, #{originalFileName}, #{storedFileName}, #{contentType}, #{fileSize})
+    </insert>
+
+    <select id="findByTodoId" resultType="com.example.todo.model.TodoAttachment">
+        SELECT id,
+               todo_id,
+               original_file_name,
+               stored_file_name,
+               content_type,
+               file_size,
+               created_at
+        FROM todo_attachments
+        WHERE todo_id = #{todoId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findByIdAndTodoId" resultType="com.example.todo.model.TodoAttachment">
+        SELECT id,
+               todo_id,
+               original_file_name,
+               stored_file_name,
+               content_type,
+               file_size,
+               created_at
+        FROM todo_attachments
+        WHERE id = #{id}
+          AND todo_id = #{todoId}
+    </select>
+
+    <delete id="deleteByIdAndTodoId">
+        DELETE
+        FROM todo_attachments
+        WHERE id = #{id}
+          AND todo_id = #{todoId}
+    </delete>
+
+</mapper>

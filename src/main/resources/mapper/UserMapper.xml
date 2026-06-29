@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.mapper.UserMapper">
+
+    <select id="findByUsername" resultType="com.example.todo.model.AppUser">
+        SELECT id, username, password, role, enabled
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <select id="countUsers" resultType="long">
+        SELECT COUNT(*)
+        FROM users
+    </select>
+
+    <insert id="insert" parameterType="com.example.todo.model.AppUser" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, password, role, enabled)
+        VALUES (#{username}, #{password}, #{role}, #{enabled})
+    </insert>
+
+    <select id="findAllUsers" resultType="com.example.todo.model.AppUser">
+        SELECT id, username, password, role, enabled
+        FROM users
+        ORDER BY id
+    </select>
+
+    <select id="findById" resultType="com.example.todo.model.AppUser">
+        SELECT id, username, password, role, enabled
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateRoleById">
+        UPDATE users
+        SET role = #{role}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateForAdmin">
+        UPDATE users
+        SET role = #{role},
+            enabled = #{enabled}
+            <if test="password != null and password != ''">
+                ,password = #{password}
+            </if>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE
+        FROM users
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

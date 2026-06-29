@@ -1,0 +1,99 @@
+:root {
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --text: #212529;
+  --muted: #6c757d;
+  --border: #dee2e6;
+  --accent: #0d6efd;
+  --label-priority-high: #dc3545;
+  --label-priority-medium: #ffc107;
+  --label-priority-low: #198754;
+  --label-status-completed: #198754;
+  --label-status-open: #6c757d;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1318;
+  --surface: #1a2028;
+  --surface-2: #222a33;
+  --text: #e9ecef;
+  --muted: #adb5bd;
+  --border: #37424f;
+  --accent: #7cb4ff;
+}
+
+.label-priority-high {
+  background-color: var(--label-priority-high) !important;
+  color: #fff !important;
+}
+
+.label-priority-medium {
+  background-color: var(--label-priority-medium) !important;
+  color: #212529 !important;
+}
+
+.label-priority-low {
+  background-color: var(--label-priority-low) !important;
+  color: #fff !important;
+}
+
+.label-status-completed {
+  background-color: var(--label-status-completed) !important;
+  color: #fff !important;
+}
+
+.label-status-open {
+  background-color: var(--label-status-open) !important;
+  color: #fff !important;
+}
+
+html, body {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+.bg-light {
+  background-color: var(--bg) !important;
+}
+
+.card, .modal-content, .dropdown-menu, .list-group-item, .table {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  color: var(--text);
+}
+
+.text-muted, .small, .form-text {
+  color: var(--muted) !important;
+}
+
+.form-control, .form-select {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+.form-control::placeholder {
+  color: var(--muted) !important;
+}
+
+.theme-toggle {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1060;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

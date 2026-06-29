@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.mapper.AuditLogMapper">
+
+    <insert id="insert" parameterType="com.example.todo.model.AuditLog" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO audit_logs (
+            action,
+            entity_type,
+            entity_id,
+            user_id,
+            old_value,
+            new_value,
+            ip_address,
+            status,
+            message
+        )
+        VALUES (
+            #{action},
+            #{entityType},
+            #{entityId},
+            #{userId},
+            #{oldValue},
+            #{newValue},
+            #{ipAddress},
+            #{status},
+            #{message}
+        )
+    </insert>
+
+    <select id="findForAdmin" resultType="com.example.todo.model.AuditLog">
+        SELECT id,
+               action,
+               entity_type,
+               entity_id,
+               user_id,
+               old_value,
+               new_value,
+               ip_address,
+               status,
+               message,
+               created_at
+        FROM audit_logs
+        <where>
+            <if test="action != null and action != ''">
+                action LIKE CONCAT('%', #{action}, '%')
+            </if>
+            <if test="entityType != null and entityType != ''">
+                AND entity_type = #{entityType}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="ipAddress != null and ipAddress != ''">
+                AND ip_address LIKE CONCAT('%', #{ipAddress}, '%')
+            </if>
+        </where>
+        ORDER BY created_at DESC, id DESC
+        LIMIT 500
+    </select>
+
+</mapper>

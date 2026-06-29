@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.mapper.TodoMapper">
+
+    <select id="findAll" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        <where>
+            <if test="userId != null">
+                t.user_id = #{userId}
+            </if>
+        </where>
+        ORDER BY t.display_order, t.id
+    </select>
+
+    <select id="findByKeywordAndSort" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        <where>
+            <if test="userId != null">
+                t.user_id = #{userId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <if test="userId != null">
+                    AND
+                </if>
+                t.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND t.category_id = #{categoryId}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'title'">t.title</when>
+            <when test="sortBy == 'completed'">t.completed</when>
+            <when test="sortBy == 'priority'">
+                CASE t.priority
+                    WHEN 'LOW' THEN 1
+                    WHEN 'MEDIUM' THEN 2
+                    WHEN 'HIGH' THEN 3
+                    ELSE 2
+                END
+            </when>
+            <when test="sortBy == 'category'">c.name</when>
+            <when test="sortBy == 'deadline'">t.deadline</when>
+            <when test="sortBy == 'displayOrder'">t.display_order</when>
+            <otherwise>t.created_at</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDir == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="findPageByKeywordAndSort" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        <where>
+            <if test="userId != null">
+                t.user_id = #{userId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <if test="userId != null">
+                    AND
+                </if>
+                t.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND t.category_id = #{categoryId}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'title'">t.title</when>
+            <when test="sortBy == 'completed'">t.completed</when>
+            <when test="sortBy == 'priority'">
+                CASE t.priority
+                    WHEN 'LOW' THEN 1
+                    WHEN 'MEDIUM' THEN 2
+                    WHEN 'HIGH' THEN 3
+                    ELSE 2
+                END
+            </when>
+            <when test="sortBy == 'category'">c.name</when>
+            <when test="sortBy == 'deadline'">t.deadline</when>
+            <when test="sortBy == 'displayOrder'">t.display_order</when>
+            <otherwise>t.created_at</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDir == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByKeyword" resultType="long">
+        SELECT COUNT(*)
+        FROM todos t
+        <where>
+            <if test="userId != null">
+                t.user_id = #{userId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <if test="userId != null">
+                    AND
+                </if>
+                t.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="categoryId != null">
+                AND t.category_id = #{categoryId}
+            </if>
+        </where>
+    </select>
+
+    <select id="findByTitle" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        <where>
+            <if test="userId != null">
+                t.user_id = #{userId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                <if test="userId != null">
+                    AND
+                </if>
+                t.title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY t.id
+    </select>
+
+    <select id="findById" parameterType="long" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.id = #{id}
+    </select>
+
+    <select id="findByIdForUser" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        WHERE t.id = #{id}
+        <if test="userId != null">
+            AND t.user_id = #{userId}
+        </if>
+    </select>
+
+    <select id="findByIds" resultType="com.example.todo.model.Todo">
+        SELECT t.id,
+               t.title,
+               t.author,
+               t.user_id,
+               t.priority,
+               t.category_id,
+               c.name  AS category_name,
+               c.color AS category_color,
+               t.deadline,
+               t.display_order,
+               t.status,
+               t.completed,
+               EXISTS(SELECT 1 FROM todo_attachments ta WHERE ta.todo_id = t.id) AS has_attachment,
+               t.created_at
+        FROM todos t
+                 LEFT JOIN categories c ON t.category_id = c.id
+        <where>
+            id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            <if test="userId != null">
+                AND t.user_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.example.todo.model.Todo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO todos (title, author, user_id, priority, category_id, deadline, display_order, status, completed)
+        VALUES (#{title}, #{author}, #{userId}, #{priority}, #{categoryId}, #{deadline}, #{displayOrder}, #{status}, #{completed})
+    </insert>
+
+    <insert id="bulkInsert">
+        INSERT INTO todos (title, author, user_id, priority, category_id, deadline, display_order, status, completed)
+        VALUES
+        <foreach collection="todos" item="todo" separator=",">
+            (#{todo.title}, #{todo.author}, #{todo.userId}, #{todo.priority}, #{todo.categoryId}, #{todo.deadline}, #{todo.displayOrder}, #{todo.status}, #{todo.completed})
+        </foreach>
+    </insert>
+
+    <update id="update" parameterType="com.example.todo.model.Todo">
+        UPDATE todos
+        SET title       = #{title},
+            author      = #{author},
+            priority    = #{priority},
+            category_id = #{categoryId},
+            deadline    = #{deadline},
+            status      = #{status},
+            completed   = #{completed}
+        WHERE id = #{id}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </update>
+
+    <update id="updateStatus">
+        UPDATE todos
+        SET status = #{status},
+            completed = #{completed}
+        WHERE id = #{id}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </update>
+
+    <update id="bulkUpdateStatus">
+        UPDATE todos
+        SET status = #{status},
+            completed = #{completed}
+        <where>
+            id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+        </where>
+    </update>
+
+    <update id="updateDisplayOrder">
+        UPDATE todos
+        SET display_order = #{displayOrder}
+        WHERE id = #{id}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </update>
+
+    <select id="findMaxDisplayOrder" resultType="int">
+        SELECT COALESCE(MAX(display_order), 0)
+        FROM todos
+        <where>
+            <if test="userId != null">
+                user_id = #{userId}
+            </if>
+        </where>
+    </select>
+
+    <delete id="deleteById">
+        DELETE
+        FROM todos
+        WHERE id = #{id}
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
+    </delete>
+
+    <delete id="deleteByIds">
+        DELETE
+        FROM todos
+        <where>
+            <if test="userId != null">
+                user_id = #{userId}
+                AND
+            </if>
+            id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </where>
+    </delete>
+
+    <delete id="deleteByUserId">
+        DELETE
+        FROM todos
+        WHERE user_id = #{userId}
+    </delete>
+
+    <select id="findAllCategories" resultType="com.example.todo.model.Category">
+        SELECT id, name, color
+        FROM categories
+        ORDER BY id
+    </select>
+
+    <select id="findCategoryById" parameterType="long" resultType="com.example.todo.model.Category">
+        SELECT id, name, color
+        FROM categories
+        WHERE id = #{id}
+    </select>
+
+    <select id="countByCategory" resultType="com.example.todo.model.CategoryTaskCount">
+        SELECT c.id AS category_id,
+               c.name AS category_name,
+               c.color AS category_color,
+               COUNT(t.id) AS task_count
+        FROM categories c
+                 LEFT JOIN todos t ON c.id = t.category_id
+            <if test="userId != null">
+                AND t.user_id = #{userId}
+            </if>
+        GROUP BY c.id, c.name, c.color
+        ORDER BY c.id
+    </select>
+
+    <select id="countByPriority" resultType="com.example.todo.model.PriorityTaskCount">
+        SELECT t.priority,
+               COUNT(*) AS task_count
+        FROM todos t
+        <where>
+            <if test="userId != null">
+                t.user_id = #{userId}
+            </if>
+        </where>
+        GROUP BY t.priority
+        ORDER BY
+            CASE t.priority
+                WHEN 'HIGH' THEN 1
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 3
+                ELSE 4
+            END
+    </select>
+
+    <select id="countCreatedBetween" resultType="int">
+        SELECT COUNT(*)
+        FROM todos
+        WHERE created_at >= #{start}
+          AND created_at &lt; #{endExclusive}
+    </select>
+
+    <select id="countCompletedCreatedBetween" resultType="int">
+        SELECT COUNT(*)
+        FROM todos
+        WHERE created_at >= #{start}
+          AND created_at &lt; #{endExclusive}
+          AND completed = TRUE
+    </select>
+
+    <select id="countCreatedByCategoryBetween" resultType="com.example.todo.model.CategoryTaskCount">
+        SELECT c.id AS category_id,
+               c.name AS category_name,
+               c.color AS category_color,
+               COUNT(t.id) AS task_count
+        FROM categories c
+                 LEFT JOIN todos t ON c.id = t.category_id
+            AND t.created_at >= #{start}
+            AND t.created_at &lt; #{endExclusive}
+        GROUP BY c.id, c.name, c.color
+        ORDER BY c.id
+    </select>
+
+</mapper>

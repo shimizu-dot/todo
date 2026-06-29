@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme", s || (d ? "dark" : "light"));}catch(e){}})();</script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <title th:text="#{todo.edit.title}">ToDo編集</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+            crossorigin="anonymous"
+    >
+</head>
+<body class="bg-light">
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <div class="text-end mb-2">
+                        <a th:href="@{/todo/{id}/edit(id=${todo.id}, lang='ja')}" class="small me-2" th:text="#{lang.ja}">日本語</a>
+                        <a th:href="@{/todo/{id}/edit(id=${todo.id}, lang='en')}" class="small" th:text="#{lang.en}">English</a>
+                    </div>
+                    <h1 class="h4 mb-4" th:text="#{todo.edit.heading}">ToDo編集</h1>
+
+                    <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+                    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+                    <form th:action="@{/todo/{id}/update(id=${todo.id})}" method="post">
+                        <div class="mb-4">
+                            <label for="title" class="form-label" th:text="#{todo.form.todoTitle}">タイトル</label>
+                            <input id="title"
+                                   name="title"
+                                   type="text"
+                                   class="form-control"
+                                   th:value="${todo.title}"
+                                   th:placeholder="#{todo.form.title.placeholder}"
+                                   required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="priority" class="form-label" th:text="#{todo.form.priority}">優先度</label>
+                            <select id="priority" name="priority" class="form-select">
+                                <option th:each="priorityOption : ${priorities}"
+                                        th:value="${priorityOption}"
+                                        th:text="${priorityOption.label}"
+                                        th:selected="${todo.priority == priorityOption}">中</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="categoryId" class="form-label" th:text="#{todo.form.category}">カテゴリ</label>
+                            <select id="categoryId" name="categoryId" class="form-select">
+                                <option th:each="category : ${categories}"
+                                        th:value="${category.id}"
+                                        th:text="${category.name}"
+                                        th:selected="${todo.categoryId == category.id}">仕事</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="deadline" class="form-label" th:text="#{todo.form.deadline}">期限日</label>
+                            <input id="deadline"
+                                   name="deadline"
+                                   type="date"
+                                   class="form-control"
+                                   th:value="${todo.deadline}">
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary" th:text="#{todo.edit.update}">更新する</button>
+                            <a th:href="@{/todo}" class="btn btn-outline-secondary" th:text="#{common.back}">戻る</a>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <h2 id="attachments-section" class="h5 mb-3" th:text="#{todo.attachment.heading}">添付ファイル</h2>
+                    <form th:action="@{/todo/{id}/attachments(id=${todo.id})}" method="post" enctype="multipart/form-data" class="mb-3"
+                          th:attr="data-msg-confirm-delete=#{todo.attachment.delete.confirm}">
+                        <div class="input-group">
+                            <input type="file" name="file" class="form-control" required>
+                            <button type="submit" class="btn btn-outline-primary" th:text="#{todo.attachment.upload}">アップロード</button>
+                        </div>
+                        <div class="form-text" th:text="#{todo.attachment.limit}">添付ファイルは10MBまでアップロードできます。</div>
+                    </form>
+
+                    <div th:if="${attachments == null or #lists.isEmpty(attachments)}"
+                         class="text-muted small"
+                         th:text="#{todo.attachment.empty}">添付ファイルはまだありません。</div>
+
+                    <ul th:if="${attachments != null and !#lists.isEmpty(attachments)}" class="list-group">
+                        <li th:each="attachment : ${attachments}" class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                            <div class="me-2 text-truncate">
+                                <a th:href="@{/todo/{todoId}/attachments/{attachmentId}/download(todoId=${todo.id}, attachmentId=${attachment.id})}"
+                                   th:text="${attachment.originalFileName}">file.txt</a>
+                                <span class="text-muted small ms-2" th:text="${'(' + attachment.fileSize + ' bytes)'}">(0 bytes)</span>
+                            </div>
+                            <form th:action="@{/todo/{todoId}/attachments/{attachmentId}/delete(todoId=${todo.id}, attachmentId=${attachment.id})}"
+                                  method="post"
+                                  onsubmit="return confirm(this.closest('form').dataset.msgConfirmDelete || 'Are you sure?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" th:text="#{common.delete}">削除</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>

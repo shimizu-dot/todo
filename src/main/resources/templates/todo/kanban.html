@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.setAttribute("data-theme", s || (d ? "dark" : "light"));}catch(e){}})();</script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title th:text="#{todo.kanban.title}">カンバン</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+            crossorigin="anonymous"
+    >
+    <style>
+        .kanban-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 992px) {
+            .kanban-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        .kanban-col {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+        .kanban-col-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+        .kanban-dropzone {
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            flex: 1;
+        }
+        .kanban-dropzone.drag-over {
+            outline: 2px dashed var(--accent);
+            outline-offset: -6px;
+            border-radius: 0.5rem;
+        }
+        .kanban-card {
+            border: 1px solid var(--border);
+            border-radius: 0.6rem;
+            background: var(--surface-2);
+            padding: 0.6rem;
+            cursor: grab;
+        }
+        .kanban-card .title {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container py-4" th:attr="data-msg-status-update-failed=#{todo.kanban.statusUpdate.failed}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0" th:text="#{todo.kanban.heading}">カンバンボード</h1>
+        <div class="d-flex gap-2">
+            <a th:href="@{/todo}" class="btn btn-outline-secondary" th:text="#{common.backToList}">一覧へ戻る</a>
+        </div>
+    </div>
+
+    <div class="kanban-grid">
+        <section class="kanban-col">
+            <div class="kanban-col-header" th:text="#{todo.status.todo}">未着手</div>
+            <div class="kanban-dropzone" data-status="TODO">
+                <article class="kanban-card"
+                         th:each="todo : ${todos}"
+                         th:if="${todo.status == T(com.example.todo.model.TodoStatus).TODO}"
+                         th:attr="data-id=${todo.id},data-current-status=${todo.status}"
+                         draggable="true">
+                    <div class="title" th:text="${todo.title}">タイトル</div>
+                    <div class="small text-muted" th:text="${todo.deadline != null ? #messages.msg('todo.kanban.deadline', #temporals.format(todo.deadline, 'yyyy-MM-dd')) : #messages.msg('todo.kanban.deadline.empty')}">期限: -</div>
+                    <a class="small" th:href="@{/todo/{id}/edit(id=${todo.id})}" th:text="#{common.edit}">編集</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="kanban-col">
+            <div class="kanban-col-header" th:text="#{todo.status.inProgress}">進行中</div>
+            <div class="kanban-dropzone" data-status="IN_PROGRESS">
+                <article class="kanban-card"
+                         th:each="todo : ${todos}"
+                         th:if="${todo.status == T(com.example.todo.model.TodoStatus).IN_PROGRESS}"
+                         th:attr="data-id=${todo.id},data-current-status=${todo.status}"
+                         draggable="true">
+                    <div class="title" th:text="${todo.title}">タイトル</div>
+                    <div class="small text-muted" th:text="${todo.deadline != null ? #messages.msg('todo.kanban.deadline', #temporals.format(todo.deadline, 'yyyy-MM-dd')) : #messages.msg('todo.kanban.deadline.empty')}">期限: -</div>
+                    <a class="small" th:href="@{/todo/{id}/edit(id=${todo.id})}" th:text="#{common.edit}">編集</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="kanban-col">
+            <div class="kanban-col-header" th:text="#{todo.status.done}">完了</div>
+            <div class="kanban-dropzone" data-status="DONE">
+                <article class="kanban-card"
+                         th:each="todo : ${todos}"
+                         th:if="${todo.status == T(com.example.todo.model.TodoStatus).DONE}"
+                         th:attr="data-id=${todo.id},data-current-status=${todo.status}"
+                         draggable="true">
+                    <div class="title" th:text="${todo.title}">タイトル</div>
+                    <div class="small text-muted" th:text="${todo.deadline != null ? #messages.msg('todo.kanban.deadline', #temporals.format(todo.deadline, 'yyyy-MM-dd')) : #messages.msg('todo.kanban.deadline.empty')}">期限: -</div>
+                    <a class="small" th:href="@{/todo/{id}/edit(id=${todo.id})}" th:text="#{common.edit}">編集</a>
+                </article>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const csrfToken = document.querySelector('meta[name=\"_csrf\"]')?.getAttribute("content");
+        const csrfHeader = document.querySelector('meta[name=\"_csrf_header\"]')?.getAttribute("content");
+        const container = document.querySelector(".container.py-4");
+        const msgStatusUpdateFailed = container?.dataset?.msgStatusUpdateFailed || "Failed to update status.";
+        let draggedCard = null;
+        let sourceZone = null;
+        let sourceNext = null;
+
+        function bindCard(card) {
+            card.addEventListener("dragstart", function () {
+                draggedCard = card;
+                sourceZone = card.parentElement;
+                sourceNext = card.nextElementSibling;
+            });
+            card.addEventListener("dragend", function () {
+                draggedCard = null;
+            });
+        }
+
+        document.querySelectorAll(".kanban-card").forEach(bindCard);
+
+        document.querySelectorAll(".kanban-dropzone").forEach(function (zone) {
+            zone.addEventListener("dragover", function (e) {
+                e.preventDefault();
+                zone.classList.add("drag-over");
+            });
+            zone.addEventListener("dragleave", function () {
+                zone.classList.remove("drag-over");
+            });
+            zone.addEventListener("drop", async function (e) {
+                e.preventDefault();
+                zone.classList.remove("drag-over");
+                if (!draggedCard) {
+                    return;
+                }
+
+                const todoId = draggedCard.getAttribute("data-id");
+                const fromStatus = draggedCard.getAttribute("data-current-status");
+                const toStatus = zone.getAttribute("data-status");
+                if (fromStatus === toStatus) {
+                    return;
+                }
+
+                zone.appendChild(draggedCard);
+                draggedCard.setAttribute("data-current-status", toStatus);
+
+                try {
+                    const headers = {"Content-Type": "application/json"};
+                    if (csrfToken && csrfHeader) {
+                        headers[csrfHeader] = csrfToken;
+                    }
+                    const response = await fetch("/todo/" + encodeURIComponent(todoId) + "/status", {
+                        method: "PATCH",
+                        headers: headers,
+                        body: JSON.stringify({status: toStatus})
+                    });
+                    if (!response.ok) {
+                        throw new Error("update failed");
+                    }
+                } catch (err) {
+                    // rollback
+                    if (sourceZone) {
+                        if (sourceNext && sourceNext.parentElement === sourceZone) {
+                            sourceZone.insertBefore(draggedCard, sourceNext);
+                        } else {
+                            sourceZone.appendChild(draggedCard);
+                        }
+                    }
+                    draggedCard.setAttribute("data-current-status", fromStatus);
+                    alert(msgStatusUpdateFailed);
+                }
+            });
+        });
+    });
+</script>
+<script th:src="@{/js/theme.js}"></script>
+</body>
+</html>
